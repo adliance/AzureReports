@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using Azure.Identity;
 using Azure.ResourceManager;
-using AzureReporting;
 using AzureReporting.Reports;
 
 var targetDirectory = new DirectoryInfo("./");

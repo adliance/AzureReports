@@ -22,7 +22,7 @@ public static class ResourceGroupsReport
         }
     }
 
-    private static void RunInternal(ArmClient client,  DirectoryInfo targetDirectory)
+    private static void RunInternal(ArmClient client, DirectoryInfo targetDirectory)
     {
         var result = new List<ResourceGroup>();
 
