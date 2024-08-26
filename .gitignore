@@ -1,0 +1,5 @@
+.idea
+bin
+obj
+.editorconfig
+.DS_Store
