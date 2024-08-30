@@ -46,12 +46,13 @@ public static class AppServicePlanReport
                     Region = appServicePlan.Data.GeoRegion,
                     Subscription = subscription.Data.DisplayName,
                     RunningAppServicesCount = appServices.Count(x => x.State == "Running"),
-                    StoppedAppServicesCount = appServices.Count(x => x.State != "Running")
+                    StoppedAppServicesCount = appServices.Count(x => x.State != "Running"),
+                    AlwaysOnAppServicesCount = appServices.Count(x => x.State == "Running" && x.SiteConfig.IsAlwaysOn == true)
                 });
             }
         }
 
-        WriteToFile(targetDirectory, result);
+        WriteToFile(targetDirectory, result.OrderBy(x => x.Subscription).ThenBy(x => x.Name).ToList());
     }
 
     private static void WriteToFile(DirectoryInfo targetDirectory, List<AppServicePlan> appServices)
@@ -63,7 +64,7 @@ public static class AppServicePlanReport
         sb.BeginHtml();
         sb.Hero("App Service Plans");
         sb.BeginTable();
-        sb.Thead("Name", "Subscription", "Region", "App Services (Running)", "App Services (Stopped)");
+        sb.Thead("Name", "Subscription", "Region", "App Services Running (Always On)", "App Services Stopped");
         sb.BeginTbody();
 
         foreach (var a in appServices)
@@ -72,7 +73,7 @@ public static class AppServicePlanReport
             sb.Td(a.Name);
             sb.Td(a.Subscription);
             sb.Td(a.Region);
-            sb.Td(a.RunningAppServicesCount.ToString("N0", CultureInfo.InvariantCulture), a.RunningAppServicesCount <= 0);
+            sb.Td($"{a.RunningAppServicesCount:N0} ({a.AlwaysOnAppServicesCount:N0})", a.RunningAppServicesCount <= 0);
             sb.Td(a.StoppedAppServicesCount.ToString("N0", CultureInfo.InvariantCulture));
             sb.EndTr();
         }
@@ -90,6 +91,7 @@ public static class AppServicePlanReport
         public string Subscription { get; init; } = "";
         public string Region { get; init; } = "";
         public int RunningAppServicesCount { get; init; }
+        public int AlwaysOnAppServicesCount { get; init; }
         public int StoppedAppServicesCount { get; init; }
     }
 }

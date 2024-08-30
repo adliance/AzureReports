@@ -49,7 +49,7 @@ public static class ResourceGroupsReport
             Console.WriteLine($" {resourceGroups.Count} resource groups found.");
         }
 
-        WriteToFile(targetDirectory, result);
+        WriteToFile(targetDirectory, result.OrderBy(x => x.Subscription).ThenBy(x => x.Name).ToList());
     }
 
     private static void WriteToFile(DirectoryInfo targetDirectory, List<ResourceGroup> resourceGroups)

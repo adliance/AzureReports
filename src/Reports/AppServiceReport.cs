@@ -48,10 +48,12 @@ public static class AppServiceReport
                     {
                         Name = appService.Name,
                         AppServicePlan = appServicePlan.Data.Name,
+                        ResourceGroup = appService.ResourceGroup,
                         HostNames = appService.HostNameSslStates.ToDictionary(x => x.Name, x => x.SslState != HostNameBindingSslState.Disabled),
                         IsStopped = appService.State != "Running",
                         HttpsOnly = appService.IsHttpsOnly == true,
                         AlwaysOn = appService.SiteConfig.IsAlwaysOn == true,
+                        SessionAffinity = appService.IsClientAffinityEnabled == true,
                         Http2 = appService.SiteConfig.IsHttp20Enabled == true
                     });
                 }
@@ -72,7 +74,7 @@ public static class AppServiceReport
         sb.BeginHtml();
         sb.Hero("App Services");
         sb.BeginTable();
-        sb.Thead("Name", "App Service Plan", "Status", "Host Names", "HTTPS only", "HTTP2", "Always On");
+        sb.Thead("Name", "App Service Plan", "Resource Group", "Status", "Host Names", "HTTPS only", "HTTP2", "Session Affinity", "Always On");
         sb.BeginTbody();
 
         foreach (var a in appServices)
@@ -80,6 +82,7 @@ public static class AppServiceReport
             sb.BeginTr();
             sb.Td(a.Name);
             sb.Td(a.AppServicePlan);
+            sb.Td(a.ResourceGroup);
             sb.Td(a.IsStopped ? "Off" : "", a is { IsPreview: false, IsStopped: true });
             sb.Td(string.Join("<br />", a.HostNames
                 .OrderBy(x => x.Key)
@@ -88,6 +91,7 @@ public static class AppServiceReport
             ));
             sb.Td(a.HttpsOnly ? "" : "Off", !a.HttpsOnly);
             sb.Td(a.Http2 ? "" : "Off", !a.Http2);
+            sb.Td(a.SessionAffinity ? "On" : "", a.SessionAffinity);
             sb.Td(a.AlwaysOn ? "On" : "", a is { IsPreview: true, AlwaysOn: true });
             sb.EndTr();
         }
@@ -103,9 +107,11 @@ public static class AppServiceReport
     {
         public string Name { get; init; } = "";
         public string AppServicePlan { get; init; } = "";
+        public string ResourceGroup { get; init; } = "";
         public IDictionary<string, bool> HostNames { get; init; } = new Dictionary<string, bool>();
         public bool IsStopped { get; init; }
         public bool Http2 { get; init; }
+        public bool SessionAffinity { get; init; }
         public bool AlwaysOn { get; init; }
         public bool HttpsOnly { get; init; }
 
