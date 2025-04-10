@@ -7,7 +7,7 @@ using System.Text;
 using Azure.ResourceManager;
 using Azure.ResourceManager.AppService;
 
-namespace AzureReporting.Reports;
+namespace AzureReports.Reports;
 
 public static class AppServicePlanReport
 {

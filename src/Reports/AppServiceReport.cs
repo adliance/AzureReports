@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,7 +8,7 @@ using Azure.ResourceManager;
 using Azure.ResourceManager.AppService;
 using Azure.ResourceManager.AppService.Models;
 
-namespace AzureReporting.Reports;
+namespace AzureReports.Reports;
 
 public static class AppServiceReport
 {
@@ -37,24 +38,30 @@ public static class AppServiceReport
 
             Console.WriteLine("\t\tLoading app services plans ...");
             var appServicePlans = subscription.GetAppServicePlans().ToList();
+
             foreach (var appServicePlan in appServicePlans)
             {
                 Console.Write($"\t\t\tLoading app services on '{appServicePlan.Data.Name}' ...");
                 var appServices = appServicePlan.GetWebApps().ToList();
 
-                foreach (var appService in appServices)
+                foreach (var a in appServices)
                 {
+                    var resourceGroup =  subscription.GetResourceGroup(a.ResourceGroup);
+                    var appService = resourceGroup.Value.GetWebSite(a.Name);
+                    var appSettings = appService.Value.GetApplicationSettings();
+
                     result.Add(new AppService
                     {
-                        Name = appService.Name,
+                        Name = a.Name,
                         AppServicePlan = appServicePlan.Data.Name,
-                        ResourceGroup = appService.ResourceGroup,
-                        HostNames = appService.HostNameSslStates.ToDictionary(x => x.Name, x => x.SslState != HostNameBindingSslState.Disabled),
-                        IsStopped = appService.State != "Running",
-                        HttpsOnly = appService.IsHttpsOnly == true,
-                        AlwaysOn = appService.SiteConfig.IsAlwaysOn == true,
-                        SessionAffinity = appService.IsClientAffinityEnabled == true,
-                        Http2 = appService.SiteConfig.IsHttp20Enabled == true
+                        ResourceGroup = a.ResourceGroup,
+                        HostNames = a.HostNameSslStates.ToDictionary(x => x.Name, x => x.SslState != HostNameBindingSslState.Disabled),
+                        IsStopped = a.State != "Running",
+                        HttpsOnly = a.IsHttpsOnly == true,
+                        AlwaysOn = a.SiteConfig.IsAlwaysOn == true,
+                        SessionAffinity = a.IsClientAffinityEnabled == true,
+                        Http2 = a.SiteConfig.IsHttp20Enabled == true,
+                        EnvironmentVariables = appSettings.Value.Properties.ToDictionary(x => x.Key, x => x.Value)
                     });
                 }
 
@@ -74,7 +81,7 @@ public static class AppServiceReport
         sb.BeginHtml();
         sb.Hero("App Services");
         sb.BeginTable();
-        sb.Thead("Name", "App Service Plan", "Resource Group", "Status", "Host Names", "HTTPS only", "HTTP2", "Session Affinity", "Always On");
+        sb.Thead("Name", "App Service Plan", "Resource Group", "Status", "Host Names", "HTTPS only", "HTTP2", "Session Affinity", "Always On", "Env Variables");
         sb.BeginTbody();
 
         foreach (var a in appServices)
@@ -93,6 +100,9 @@ public static class AppServiceReport
             sb.Td(a.Http2 ? "" : "Off", !a.Http2);
             sb.Td(a.SessionAffinity ? "On" : "", a.SessionAffinity);
             sb.Td(a.AlwaysOn ? "On" : "", a is { IsPreview: true, AlwaysOn: true });
+            sb.Td(a.EnvironmentVariables.Count.ToString("N0", CultureInfo.InvariantCulture)
+                  + (a.EnvironmentVariablesContainPassword ? "<br />[!] Contains Password" : "")
+            );
             sb.EndTr();
         }
 
@@ -109,6 +119,21 @@ public static class AppServiceReport
         public string AppServicePlan { get; init; } = "";
         public string ResourceGroup { get; init; } = "";
         public IDictionary<string, bool> HostNames { get; init; } = new Dictionary<string, bool>();
+        public IDictionary<string, string> EnvironmentVariables { get; init; } = new Dictionary<string, string>();
+
+        public bool EnvironmentVariablesContainPassword
+        {
+            get
+            {
+                foreach (var (k, v) in EnvironmentVariables)
+                {
+                    if (v.Contains("password", StringComparison.OrdinalIgnoreCase)) return true;
+                }
+
+                return false;
+            }
+        }
+
         public bool IsStopped { get; init; }
         public bool Http2 { get; init; }
         public bool SessionAffinity { get; init; }

@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using Azure.Identity;
 using Azure.ResourceManager;
-using AzureReporting.Reports;
+using AzureReports.Reports;
 
 var targetDirectory = new DirectoryInfo("./");
 

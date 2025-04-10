@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace AzureReporting;
+namespace AzureReports;
 
 public static class StringBuilderExtensions
 {

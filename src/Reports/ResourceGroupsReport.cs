@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using Azure.ResourceManager;
 
-namespace AzureReporting.Reports;
+namespace AzureReports.Reports;
 
 public static class ResourceGroupsReport
 {
