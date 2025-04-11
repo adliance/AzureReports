@@ -85,7 +85,7 @@ public static class StringBuilderExtensions
     public static void Hero(this StringBuilder sb, string title)
     {
         sb.AppendLine("<section class=\"hero is-primary\"><div class=\"hero-body\">");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"<div class=\"container\"><h1 class=\"title\">{title}</h1></div>");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"<div class=\"container is-fluid\"><h1 class=\"title\">{title}</h1></div>");
         sb.AppendLine("</div>\n</section>");
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using Azure.ResourceManager;
 using Azure.ResourceManager.AppService;
@@ -41,14 +42,35 @@ public static class AppServiceReport
 
             foreach (var appServicePlan in appServicePlans)
             {
-                Console.Write($"\t\t\tLoading app services on '{appServicePlan.Data.Name}' ...");
+                Console.WriteLine($"\t\t\tLoading app services on '{appServicePlan.Data.Name}' ...");
                 var appServices = appServicePlan.GetWebApps().ToList();
 
                 foreach (var a in appServices)
                 {
-                    var resourceGroup =  subscription.GetResourceGroup(a.ResourceGroup);
+                    Console.WriteLine($"\t\t\t\tWorking on app service '{a.Name}' ...");
+
+                    var resourceGroup = subscription.GetResourceGroup(a.ResourceGroup);
                     var appService = resourceGroup.Value.GetWebSite(a.Name);
                     var appSettings = appService.Value.GetApplicationSettings();
+
+                    var healthChecks = new Dictionary<string, bool>();
+                    foreach (var hostname in a.HostNames)
+                    {
+                        using (var httpClient = new HttpClient())
+                        {
+                            var url = "https://" + hostname + "/health";
+                            try
+                            {
+                                var response = httpClient.GetAsync(url).GetAwaiter().GetResult();
+                                response.EnsureSuccessStatusCode();
+                                healthChecks.Add(url, true);
+                            }
+                            catch
+                            {
+                                healthChecks.Add(url, false);
+                            }
+                        }
+                    }
 
                     result.Add(new AppService
                     {
@@ -61,11 +83,10 @@ public static class AppServiceReport
                         AlwaysOn = a.SiteConfig.IsAlwaysOn == true,
                         SessionAffinity = a.IsClientAffinityEnabled == true,
                         Http2 = a.SiteConfig.IsHttp20Enabled == true,
-                        EnvironmentVariables = appSettings.Value.Properties.ToDictionary(x => x.Key, x => x.Value)
+                        EnvironmentVariables = appSettings.Value.Properties.ToDictionary(x => x.Key, x => x.Value),
+                        HealthChecks = healthChecks
                     });
                 }
-
-                Console.WriteLine($" {appServices.Count} app services found.");
             }
         }
 
@@ -81,7 +102,18 @@ public static class AppServiceReport
         sb.BeginHtml();
         sb.Hero("App Services");
         sb.BeginTable();
-        sb.Thead("Name", "App Service Plan", "Resource Group", "Status", "Host Names", "HTTPS only", "HTTP2", "Session Affinity", "Always On", "Env Variables");
+        sb.Thead(
+            "Name",
+            "App Service Plan",
+            "Resource Group",
+            "Status",
+            "Host Names",
+            "HTTPS only",
+            "HTTP2",
+            "Session Affinity",
+            "Always On",
+            "Env Variables",
+            "Health Checks");
         sb.BeginTbody();
 
         foreach (var a in appServices)
@@ -101,7 +133,12 @@ public static class AppServiceReport
             sb.Td(a.SessionAffinity ? "On" : "", a.SessionAffinity);
             sb.Td(a.AlwaysOn ? "On" : "", a is { IsPreview: true, AlwaysOn: true });
             sb.Td(a.EnvironmentVariables.Count.ToString("N0", CultureInfo.InvariantCulture)
-                  + (a.EnvironmentVariablesContainPassword ? "<br />[!] Contains Password" : "")
+                  + (a.EnvironmentVariablesContainPassword ? "<br />[!]&nbsp;Password" : "")
+            );
+            sb.Td(a.HealthChecks.Count.ToString("N0", CultureInfo.InvariantCulture)
+                  + (a.HasFailedHealthChecks
+                      ? "<br />[!]&nbsp;" + a.HealthChecks.Where(x => !x.Value).Select(x => x.Key).Aggregate((x, y) => $"{x}<br />[!]&nbsp;{y}")
+                      : "")
             );
             sb.EndTr();
         }
@@ -120,6 +157,8 @@ public static class AppServiceReport
         public string ResourceGroup { get; init; } = "";
         public IDictionary<string, bool> HostNames { get; init; } = new Dictionary<string, bool>();
         public IDictionary<string, string> EnvironmentVariables { get; init; } = new Dictionary<string, string>();
+        public IDictionary<string, bool> HealthChecks { get; init; } = new Dictionary<string, bool>();
+        public bool HasFailedHealthChecks => HealthChecks.Any(x => !x.Value);
 
         public bool EnvironmentVariablesContainPassword
         {
