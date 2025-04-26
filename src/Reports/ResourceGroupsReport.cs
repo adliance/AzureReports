@@ -69,7 +69,7 @@ public static class ResourceGroupsReport
             sb.BeginTr();
             sb.Td(r.Name);
             sb.Td(r.Subscription);
-            sb.Td(r.ResourcesCount.ToString("N0", CultureInfo.InvariantCulture), r.ResourcesCount <= 0);
+            sb.Td(r.ResourcesCount.ToString("N0", CultureInfo.InvariantCulture), "", r.ResourcesCount <= 0);
             sb.EndTr();
         }
 

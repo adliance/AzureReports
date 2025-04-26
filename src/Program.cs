@@ -13,5 +13,5 @@ var subscriptions = client.GetSubscriptions().Count();
 Console.WriteLine($" {subscriptions} subscriptions found.");
 
 AppServicePlanReport.Run(client, targetDirectory);
-AppServiceReport.Run(client, targetDirectory);
+await AppServiceReport.Run(client, targetDirectory);
 ResourceGroupsReport.Run(client, targetDirectory);

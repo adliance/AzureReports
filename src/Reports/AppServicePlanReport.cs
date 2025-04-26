@@ -73,7 +73,7 @@ public static class AppServicePlanReport
             sb.Td(a.Name);
             sb.Td(a.Subscription);
             sb.Td(a.Region);
-            sb.Td($"{a.RunningAppServicesCount:N0} ({a.AlwaysOnAppServicesCount:N0})", a.RunningAppServicesCount <= 0);
+            sb.Td($"{a.RunningAppServicesCount:N0} ({a.AlwaysOnAppServicesCount:N0})", "", a.RunningAppServicesCount <= 0);
             sb.Td(a.StoppedAppServicesCount.ToString("N0", CultureInfo.InvariantCulture));
             sb.EndTr();
         }
