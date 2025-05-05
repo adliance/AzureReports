@@ -66,25 +66,21 @@ public static class AppServiceReport
 
                     var healthChecks = new Dictionary<string, bool>();
 
-                    if (appService.Data.State == "Running")
+                    using var httpClient = new HttpClient();
+                    foreach (var hostname in appService.Data.HostNames)
                     {
-                        using var httpClient = new HttpClient();
-                        foreach (var hostname in appService.Data.HostNames)
+                        var url = "https://" + hostname + "/health";
+                        try
                         {
-                            var url = "https://" + hostname + "/health";
-                            try
-                            {
-                                var response = httpClient.GetAsync(url).GetAwaiter().GetResult();
-                                response.EnsureSuccessStatusCode();
-                                healthChecks.Add(url, true);
-                            }
-                            catch
-                            {
-                                healthChecks.Add(url, false);
-                            }
+                            var response = httpClient.GetAsync(url).GetAwaiter().GetResult();
+                            response.EnsureSuccessStatusCode();
+                            healthChecks.Add(url, true);
+                        }
+                        catch
+                        {
+                            healthChecks.Add(url, false);
                         }
                     }
-
 
                     result.Add(new AppService
                     {
